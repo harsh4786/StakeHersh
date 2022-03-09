@@ -15,7 +15,7 @@ pub const MIN_DURATION: u64 = 1;
 
 const PRECISION: u128 = u64::MAX as u128;
 pub fn update_yield(
-    pool: &Account<StakePool>,
+    pool: &mut Account<StakePool>,
     staker: Option<&mut Box<Account<Staker>>>,
     staked_amount: u64,
 ) -> Result<()> {
@@ -92,7 +92,7 @@ pub mod stake_hersh {
     use super::*;
     pub fn init_stake_pool(ctx: Context<InitPool>, pool_bump: u8, reward_duration: u64) -> Result<()>{
         if reward_duration < MIN_DURATION {
-            return Err(error!(ErrorCode::DurationTooShort.into()));
+            return Err(error!(StakeErr::DurationTooShort));
         }
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -134,7 +134,7 @@ pub mod stake_hersh {
 
     pub fn stake(ctx: Context<Stake>, amount: u64) -> Result<()> {
         if amount == 0{
-           error!(ErrorCode::AmountZero.into());
+           return Err(error!(StakeErr::AmountZero));
         }
         let total_staked = ctx.accounts.staking_vault.amount;
 
@@ -200,14 +200,14 @@ pub mod stake_hersh {
 
     pub fn withdraw(ctx: Context<Stake>, spt_amount: u64) -> Result<()> {
         if spt_amount == 0 {
-            return Err(Errors::AmountZero.into());
+            return err!(StakeErr::AmountZero);
         }
 
         let stake_pool = &mut ctx.accounts.stake_pool;
         let staked_amount = ctx.accounts.staking_vault.amount;
 
         if ctx.accounts.staker.staked_amount < spt_amount {
-            return Err(error!(ErrorCode::InsufficientFundUnstake.into()));
+            return Err(error!(StakeErr::InsufficientFundUnstake));
         }
 
         let staker_opt = Some(&mut ctx.accounts.staker);
@@ -380,13 +380,13 @@ pub struct Staker{
     pub nonce: u8,
 }
 #[error_code]
-pub enum ErrorCode {
+pub enum StakeErr {
     #[msg("Duration too short")]
     DurationTooShort,
     #[msg("Amount should be greater than zero")]
     AmountZero,
     #[msg("Amount must be greater than 0")]
     AmountMustBeGreaterThanZero,
-    #[msd("Insufficient funds to unstake")]
+    #[msg("Insufficient funds to unstake")]
     InsufficientFundUnstake,
 }
