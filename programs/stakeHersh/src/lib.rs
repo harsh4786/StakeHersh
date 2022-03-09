@@ -162,7 +162,7 @@ pub mod stake_hersh {
     }
 
     
-    pub fn claim_yield(ctx: Context<ClaimYield>, amount: u64) -> Result<()> {
+    pub fn claim_yield(ctx: Context<ClaimYield>) -> Result<()> {
     
         let total_staked = ctx.accounts.staking_vault.amount;
         let user_opt = Some(&mut ctx.accounts.staker);
@@ -174,7 +174,7 @@ pub mod stake_hersh {
             ctx.accounts.stake_pool.to_account_info().key.as_ref(),
             &[ctx.accounts.stake_pool.pool_bump],
         ];
-
+        let pool_signer =&[&seeds[..]];
         if ctx.accounts.staker.unclaimed_yield > 0 {
             let mut reward_amount = ctx.accounts.staker.unclaimed_yield;
             let vault_balance = ctx.accounts.staker_yield_account.amount;
@@ -183,13 +183,14 @@ pub mod stake_hersh {
                 reward_amount = vault_balance;
             }
             if reward_amount > 0 {
-                let cpi_ctx = CpiContext::new(
+                let cpi_ctx = CpiContext::new_with_signer(
                     ctx.accounts.token_program.to_account_info(),
                     token::Transfer {
                         from: ctx.accounts.yield_token_vault.to_account_info(),
                         to: ctx.accounts.staker_yield_account.to_account_info(),
                         authority: ctx.accounts.pool_signer.to_account_info(), 
                     },
+                    pool_signer,
                 );
                 token::transfer(cpi_ctx, reward_amount)?;
             }
