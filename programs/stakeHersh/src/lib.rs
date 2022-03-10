@@ -14,7 +14,7 @@ pub const DEPOSIT_REQUIREMENT: u64 = 10_000_000_000_000;
 pub const MIN_DURATION: u64 = 1;
 
 const PRECISION: u128 = u64::MAX as u128;
-pub fn update_yield(
+pub(crate) fn update_yield(
     pool: &mut Account<StakePool>,
     staker: Option<&mut Box<Account<Staker>>>,
     staked_amount: u64,
